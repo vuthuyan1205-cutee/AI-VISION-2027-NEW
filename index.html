@@ -1483,7 +1483,7 @@ requestAnimationFrame(helloFrame);
       'Areas of interest':d.interests.join('; ')+(d.interestsOther?' ('+d.interestsOther+')':''),'1:1 business matching':d.matching,'Questions':d.questions||'-','Submitted at':d.submittedAt};
     var ctl=window.AbortController?new AbortController():null,tm=setTimeout(function(){try{ctl&&ctl.abort()}catch(e){}},15000);
     return fetch('https://formsubmit.co/ajax/'+TO,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify(body),signal:ctl?ctl.signal:undefined})
-      .then(function(r){clearTimeout(tm);return r.json()}).then(function(j){if(!j||String(j.success)!=='true')throw new Error('send');return j})}
+      .then(function(r){clearTimeout(tm);return r.json()}).then(function(j){if(!j||String(j.success)!=='true'){var e=new Error('send');e.msg=String((j&&j.message)||'');throw e}return j})}
   function mailtoFallback(d){var u='mailto:'+TO+'?subject='+encodeURIComponent('AI Vision 2027 registration: '+d.fullName+' ('+d.company+')')+'&body='+encodeURIComponent(lines(d).join('\n'));
     try{var a=document.createElement('a');a.href=u;a.target='_top';a.rel='noopener';document.body.appendChild(a);a.click();a.remove()}catch(e){location.href=u}}
   function confetti(){try{if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;var c=document.createElement('canvas');c.id='okConf';document.body.appendChild(c);var x=c.getContext('2d'),d=Math.min(2,devicePixelRatio||1);c.width=innerWidth*d;c.height=innerHeight*d;x.scale(d,d);
@@ -1497,9 +1497,10 @@ requestAnimationFrame(helloFrame);
     var d=collect();btn.disabled=true;btn.textContent='Submitting…';
     function ok(){btn.disabled=false;btn.textContent='Update registration';sent();try{love({clientX:innerWidth/2,clientY:innerHeight/2})}catch(x){}}
     function saveDb(){if(!ready||!db||!uid||readOnly)return Promise.reject();return db.doc('registrations/'+uid).set(d)}
-    sendMail(d).then(function(){saveDb().catch(function(){});ok()},function(){
+    sendMail(d).then(function(){saveDb().catch(function(){});ok()},function(er){
+      if(er&&/activat/i.test(er.msg||'')){btn.disabled=false;btn.textContent='Submit registration';showErr('Registration by email is being set up. An activation email has been sent to vgs@vnpt.vn. Once it is activated, please press Submit again.');return}
       saveDb().then(ok,function(){btn.disabled=false;btn.textContent='Submit registration';mailtoFallback(d);
-        showErr('Your email app has opened with your registration to vgs@vnpt.vn. Please press Send to complete it. If nothing opened, use the Google Form link below.')})});
+        showErr('Your email app has opened with your registration to vgs@vnpt.vn. Please press Send to complete it. If nothing opened, use the Google Form link below. [ref: '+((er&&(er.msg||er.name||er.message))||'unknown').slice(0,120)+']')})});
   });
   f.addEventListener('reset',function(){showErr('');$$('.fld',f).forEach(function(x){x.classList.remove('bad')})});
   if(!window.claude||!claude.use) return;
